@@ -15,7 +15,8 @@ import rehypeLazyLoadImage from './src/plugins/lazyLoadImage.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://example.com',
+  site: 'https://zhangbt6.github.io',
+  base: '/mingzi-site',
   markdown: {
     remarkPlugins: [remarkMath],
     rehypePlugins: [rehypeKatex, rehypeLazyLoadImage],
