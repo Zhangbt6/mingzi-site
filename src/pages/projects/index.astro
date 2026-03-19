@@ -1,0 +1,277 @@
+---
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { SITE } from "../../utils/config";
+import randomCover from "../../utils/randomCover";
+import Footer from "../../components/Footer.astro";
+import HeaderTitle from "../../components/partial/HeaderTitle.astro";
+import HeaderSubTitle from "../../components/partial/HeaderSubTitle.astro";
+import { urlFor } from "../../utils/urlFor";
+
+type Props = {};
+
+const allProjects = await getCollection("projects", ({ data }) => !data.draft);
+allProjects.sort((a, b) => {
+  const dateA = a.data.date ? new Date(a.data.date).getTime() : 0;
+  const dateB = b.data.date ? new Date(b.data.date).getTime() : 0;
+  return dateB - dateA;
+});
+
+const statusColors: Record<string, string> = {
+  active: "#4ade80",
+  completed: "#60a5fa",
+  wip: "#fbbf24",
+  archived: "#9ca3af",
+};
+---
+
+<BaseLayout>
+  <HeaderTitle title="Projects" url={urlFor("/projects")} slot="header" />
+  <HeaderSubTitle subtitle="我的项目作品" url={urlFor("/projects")} slot="header" />
+
+  <section id="main" aria-label="Main content">
+    <div class="projects-header">
+      <h1 class="page-title">Projects</h1>
+      <p class="page-subtitle">机器人控制 · AI 应用 · 开源项目</p>
+    </div>
+
+    <div class="projects-grid">
+      {
+        allProjects.map((project) => (
+          <a href={urlFor(`projects/${project.id}`)} class="project-card">
+            <div class="project-cover">
+              <img
+                src={urlFor(project.data.cover || randomCover())}
+                alt={project.data.title}
+                loading="lazy"
+              />
+              {project.data.featured && (
+                <span class="featured-badge">精选</span>
+              )}
+            </div>
+            <div class="project-info">
+              <div class="project-header">
+                <h3 class="project-title">{project.data.title}</h3>
+                {project.data.status && (
+                  <span
+                    class="status-badge"
+                    style={`background: ${statusColors[project.data.status] || "#9ca3af"}`}
+                  >
+                    {project.data.status === "active"
+                      ? "进行中"
+                      : project.data.status === "completed"
+                        ? "已完成"
+                        : project.data.status === "wip"
+                          ? "进行中"
+                          : "已归档"}
+                  </span>
+                )}
+              </div>
+              <p class="project-desc">{project.data.description}</p>
+              <div class="project-meta">
+                <div class="project-tags">
+                  {project.data.tags?.slice(0, 4).map((tag) => (
+                    <span class="tag">{tag}</span>
+                  ))}
+                </div>
+                <div class="project-links">
+                  {project.data.links?.repo && (
+                    <span class="link-icon" title="源码仓库">
+                      <Icon name="fa6-brands:github" size={16} />
+                    </span>
+                  )}
+                  {project.data.links?.demo && (
+                    <span class="link-icon" title="在线演示">
+                      <Icon name="fa6-solid:play" size={16} />
+                    </span>
+                  )}
+                  {project.data.links?.paper && (
+                    <span class="link-icon" title="相关论文">
+                      <Icon name="fa6-solid:file-lines" size={16} />
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+
+    {
+      allProjects.length === 0 && (
+        <div class="empty-state">
+          <Icon name="fa6-solid:folder-open" size={48} />
+          <p>暂无项目</p>
+        </div>
+      )
+    }
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style lang="stylus">
+  .projects-header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 32px;
+    background: var(--color-wrap);
+    border-radius: 12px;
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    color: var(--grey-6);
+    font-size: 1.1rem;
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .project-card {
+    background: var(--color-wrap);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card-hover);
+    }
+  }
+
+  .project-cover {
+    height: 180px;
+    overflow: hidden;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: 0.3s;
+    }
+  }
+
+  .project-card:hover .project-cover img {
+    transform: scale(1.05);
+  }
+
+  .featured-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, var(--red-1), var(--red-2));
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .project-info {
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .project-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin: 0;
+    flex: 1;
+  }
+
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: white;
+    white-space: nowrap;
+  }
+
+  .project-desc {
+    font-size: 0.9rem;
+    color: var(--grey-6);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .project-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-card);
+  }
+
+  .project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    background: var(--color-card);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--grey-5);
+  }
+
+  .project-links {
+    display: flex;
+    gap: 12px;
+  }
+
+  .link-icon {
+    color: var(--grey-5);
+    transition: 0.2s;
+
+    &:hover {
+      color: var(--red-1);
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px;
+    color: var(--grey-6);
+
+    p {
+      margin-top: 16px;
+      font-size: 1.1rem;
+    }
+  }
+</style>

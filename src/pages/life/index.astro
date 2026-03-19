@@ -1,0 +1,201 @@
+---
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { SITE } from "../../utils/config";
+import randomCover from "../../utils/randomCover";
+import Footer from "../../components/Footer.astro";
+import HeaderTitle from "../../components/partial/HeaderTitle.astro";
+import HeaderSubTitle from "../../components/partial/HeaderSubTitle.astro";
+import { formatDate } from "../../utils/formatDate";
+import { urlFor } from "../../utils/urlFor";
+
+type Props = {};
+
+const allLife = await getCollection("life", ({ data }) => !data.draft);
+allLife.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+const typeLabels: Record<string, string> = {
+  gallery: "📷 影像",
+  writing: "✍️ 写作",
+  game: "🎮 游戏",
+  video: "🎬 视频",
+  travel: "✈️ 旅行",
+  daily: "📝 日记",
+  misc: "📦 其他",
+};
+
+const typeColors: Record<string, string> = {
+  gallery: "#f472b6",
+  writing: "#fb923c",
+  game: "#4ade80",
+  video: "#60a5fa",
+  travel: "#a78bfa",
+  daily: "#fbbf24",
+  misc: "#94a3b8",
+};
+---
+
+<BaseLayout>
+  <HeaderTitle title="Life" url={urlFor("/life")} slot="header" />
+  <HeaderSubTitle subtitle="生活记录 · 旅行摄影 · 游戏日常" url={urlFor("/life")} slot="header" />
+
+  <section id="main" aria-label="Main content">
+    <div class="life-header">
+      <h1 class="page-title">Life</h1>
+      <p class="page-subtitle">旅行摄影 · 游戏日常 · 生活碎片</p>
+    </div>
+
+    <div class="life-grid">
+      {
+        allLife.map((item) => (
+          <a href={urlFor(`life/${item.id}`)} class="life-card">
+            <div class="card-cover">
+              <img
+                src={urlFor(item.data.cover || randomCover())}
+                alt={item.data.title}
+                loading="lazy"
+              />
+              <span
+                class="type-badge"
+                style={`background: ${typeColors[item.data.type] || "#94a3b8"}`}
+              >
+                {typeLabels[item.data.type] || item.data.type}
+              </span>
+            </div>
+            <div class="card-info">
+              <h3 class="card-title">{item.data.title}</h3>
+              <p class="card-desc">{item.data.description}</p>
+              <div class="card-meta">
+                <span class="card-date">📅 {formatDate(item.data.date)}</span>
+                {item.data.images && item.data.images.length > 0 && (
+                  <span class="img-count">📷 {item.data.images.length}</span>
+                )}
+              </div>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+
+    {
+      allLife.length === 0 && (
+        <div class="empty-state">
+          <Icon name="fa6-solid:camera" size={48} />
+          <p>暂无生活记录</p>
+        </div>
+      )
+    }
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style lang="stylus">
+  .life-header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 32px;
+    background: var(--color-wrap);
+    border-radius: 12px;
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    color: var(--grey-6);
+    font-size: 1.1rem;
+  }
+
+  .life-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+
+  .life-card {
+    background: var(--color-wrap);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    transition: 0.3s;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card-hover);
+    }
+  }
+
+  .card-cover {
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: 0.3s;
+    }
+  }
+
+  .life-card:hover .card-cover img {
+    transform: scale(1.05);
+  }
+
+  .type-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .card-info {
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin: 0 0 8px;
+  }
+
+  .card-desc {
+    font-size: 0.85rem;
+    color: var(--grey-6);
+    margin: 0 0 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--grey-5);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px;
+    color: var(--grey-6);
+
+    p {
+      margin-top: 16px;
+    }
+  }
+</style>

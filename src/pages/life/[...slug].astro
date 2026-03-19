@@ -1,0 +1,185 @@
+---
+import { getCollection, render } from "astro:content";
+import { Icon } from "astro-icon/components";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Footer from "../../components/Footer.astro";
+import HeaderTitle from "../../components/partial/HeaderTitle.astro";
+import { formatDate } from "../../utils/formatDate";
+import { urlFor } from "../../utils/urlFor";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("life");
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const typeLabels: Record<string, string> = {
+  gallery: "📷 影像",
+  writing: "✍️ 写作",
+  game: "🎮 游戏",
+  video: "🎬 视频",
+  travel: "✈️ 旅行",
+  daily: "📝 日记",
+  misc: "📦 其他",
+};
+---
+
+<BaseLayout>
+  <HeaderTitle title={entry.data.title} url={urlFor(`/life/${entry.id}`)} slot="header" />
+
+  <section id="main" aria-label="Main content">
+    <div class="life-hero">
+      {entry.data.cover && (
+        <div class="hero-cover">
+          <img src={urlFor(entry.data.cover)} alt={entry.data.title} />
+        </div>
+      )}
+      <div class="hero-info">
+        <span class="type-badge">{typeLabels[entry.data.type] || entry.data.type}</span>
+        <h1 class="hero-title">{entry.data.title}</h1>
+        <p class="hero-desc">{entry.data.description}</p>
+        <div class="hero-meta">
+          <span>📅 {formatDate(entry.data.date)}</span>
+          {entry.data.tags?.map((tag) => (
+            <span class="tag">{tag}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {entry.data.images && entry.data.images.length > 0 && (
+      <div class="gallery-grid">
+        {entry.data.images.map((img: string) => (
+          <div class="gallery-item">
+            <img src={urlFor(img)} alt="" loading="lazy" />
+          </div>
+        ))}
+      </div>
+    )}
+
+    <div class="content-body">
+      <Content />
+    </div>
+
+    <div class="back-link">
+      <a href={urlFor("/life")}>← 返回 Life</a>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style lang="stylus">
+  .life-hero {
+    background: var(--color-wrap);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .hero-cover {
+    height: 320px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .hero-info {
+    padding: 32px;
+  }
+
+  .type-badge {
+    display: inline-block;
+    background: var(--red-1);
+    color: white;
+    padding: 4px 14px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin: 0 0 12px;
+  }
+
+  .hero-desc {
+    color: var(--grey-6);
+    font-size: 1rem;
+    margin: 0 0 16px;
+    line-height: 1.6;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--grey-5);
+  }
+
+  .tag {
+    background: var(--color-card);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--grey-5);
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .gallery-item {
+    border-radius: 8px;
+    overflow: hidden;
+    height: 150px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: 0.3s;
+    }
+
+    &:hover img {
+      transform: scale(1.05);
+    }
+  }
+
+  .content-body {
+    background: var(--color-wrap);
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 24px;
+  }
+
+  .back-link {
+    text-align: center;
+    margin-top: 24px;
+
+    a {
+      color: var(--color-link);
+      text-decoration: none;
+
+      &:hover {
+        color: var(--red-1);
+      }
+    }
+  }
+</style>

@@ -1,0 +1,389 @@
+---
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE } from "../utils/config";
+import randomCover from "../utils/randomCover";
+import { _p } from "../utils/i18n";
+import { wordCount, readingTime } from "../utils/wordCount";
+import Footer from "../components/Footer.astro";
+import HeaderTitle from "../components/partial/HeaderTitle.astro";
+import HeaderSubTitle from "../components/partial/HeaderSubTitle.astro";
+import { formatDate } from "../utils/formatDate";
+import { urlFor } from "../utils/urlFor";
+
+type Props = {};
+
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+allPosts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+// Group by category (from tags or default to 'all')
+const categories = ["Tech", "Research", "Life"];
+const postsByCategory: Record<string, CollectionEntry<"blog">[]> = {
+  Tech: [],
+  Research: [],
+  Life: [],
+  Other: [],
+};
+
+allPosts.forEach((post) => {
+  const firstTag = post.data.tags?.[0]?.toLowerCase() || "";
+  if (firstTag.includes("tech") || firstTag.includes("code") || firstTag.includes("ai")) {
+    postsByCategory.Tech.push(post);
+  } else if (firstTag.includes("research") || firstTag.includes("paper") || firstTag.includes("robot")) {
+    postsByCategory.Research.push(post);
+  } else if (firstTag.includes("life") || firstTag.includes("travel") || firstTag.includes("hobby")) {
+    postsByCategory.Life.push(post);
+  } else {
+    postsByCategory.Other.push(post);
+  }
+});
+
+const categoryLabels: Record<string, string> = {
+  Tech: "💻 技术",
+  Research: "🔬 研究",
+  Life: "🌸 生活",
+  Other: "📝 随笔",
+};
+---
+
+<BaseLayout>
+  <HeaderTitle title="Notes" url={urlFor("/notes")} slot="header" />
+  <HeaderSubTitle subtitle="技术笔记 · 研究随笔 · 生活记录" url={urlFor("/notes")} slot="header" />
+
+  <section id="main" aria-label="Main content">
+    <div class="notes-header">
+      <h1 class="page-title">Notes</h1>
+      <p class="page-subtitle">技术笔记 · 研究随笔 · 生活记录</p>
+    </div>
+
+    <div class="notes-container">
+      <!-- Category Tabs -->
+      <div class="category-tabs">
+        <button class="tab-btn active" data-category="all">
+          全部 <span class="count">{allPosts.length}</span>
+        </button>
+        {
+          categories.map((cat) => (
+            <button class="tab-btn" data-category={cat}>
+              {categoryLabels[cat]} <span class="count">{postsByCategory[cat].length}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      <!-- All Posts -->
+      <div class="posts-section active" id="posts-all">
+        <div class="posts-list">
+          {
+            allPosts.map((post) => (
+              <a href={urlFor(`blog/${post.id}`)} class="post-item">
+                <div class="post-cover">
+                  <img
+                    src={urlFor(post.data.cover || randomCover())}
+                    alt={post.data.title}
+                    loading="lazy"
+                  />
+                </div>
+                <div class="post-content">
+                  <div class="post-meta">
+                    <span class="post-date">{formatDate(post.data.pubDate)}</span>
+                    <span class="post-reading">
+                      <Icon name="fa6-solid:book" size={12} />
+                      {_p("post.time", readingTime(post.body || ""))}
+                    </span>
+                  </div>
+                  <h3 class="post-title">{post.data.title}</h3>
+                  <p class="post-excerpt">
+                    {post.data.excerpt || post.body?.slice(0, 150)}
+                  </p>
+                  {
+                    post.data.tags && post.data.tags.length > 0 && (
+                      <div class="post-tags">
+                        {post.data.tags.slice(0, 3).map((tag) => (
+                          <span class="tag">{tag}</span>
+                        ))}
+                      </div>
+                    )
+                  }
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- Category-specific posts -->
+      {
+        categories.map((cat) => (
+          <div class="posts-section" id={`posts-${cat}`}>
+            <div class="posts-list">
+              {
+                postsByCategory[cat].length > 0 ? (
+                  postsByCategory[cat].map((post) => (
+                    <a href={urlFor(`blog/${post.id}`)} class="post-item">
+                      <div class="post-cover">
+                        <img
+                          src={urlFor(post.data.cover || randomCover())}
+                          alt={post.data.title}
+                          loading="lazy"
+                        />
+                      </div>
+                      <div class="post-content">
+                        <div class="post-meta">
+                          <span class="post-date">{formatDate(post.data.pubDate)}</span>
+                          <span class="post-reading">
+                            <Icon name="fa6-solid:book" size={12} />
+                            {_p("post.time", readingTime(post.body || ""))}
+                          </span>
+                        </div>
+                        <h3 class="post-title">{post.data.title}</h3>
+                        <p class="post-excerpt">
+                          {post.data.excerpt || post.body?.slice(0, 150)}
+                        </p>
+                        {
+                          post.data.tags && post.data.tags.length > 0 && (
+                            <div class="post-tags">
+                              {post.data.tags.slice(0, 3).map((tag) => (
+                                <span class="tag">{tag}</span>
+                              ))}
+                            </div>
+                          )
+                        }
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <div class="empty-state">
+                    <Icon name="fa6-solid:folder-open" size={48} />
+                    <p>暂无{categoryLabels[cat]}笔记</p>
+                  </div>
+                )
+              }
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const sections = document.querySelectorAll(".posts-section");
+
+    tabBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const category = btn.getAttribute("data-category");
+
+        // Update active tab
+        tabBtns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        // Show corresponding section
+        sections.forEach((section) => {
+          section.classList.remove("active");
+          if (section.id === `posts-${category}`) {
+            section.classList.add("active");
+          }
+        });
+      });
+    });
+  });
+</script>
+
+<style lang="stylus">
+  .notes-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 32px;
+    background: var(--color-wrap);
+    border-radius: 12px;
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    color: var(--grey-6);
+    font-size: 1.1rem;
+  }
+
+  .notes-container {
+    background: var(--color-wrap);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-card);
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
+    background: var(--color-card);
+    color: var(--grey-6);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+
+    .count {
+      background: var(--color-wrap);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+    }
+
+    &:hover {
+      background: var(--color-link);
+      color: white;
+    }
+
+    &.active {
+      background: var(--red-1);
+      color: white;
+
+      .count {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+    }
+  }
+
+  .posts-section {
+    display: none;
+
+    &.active {
+      display: block;
+    }
+  }
+
+  .posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .post-item {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    background: var(--color-card);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: 0.2s;
+
+    &:hover {
+      transform: translateX(4px);
+      box-shadow: var(--shadow-card);
+    }
+
+    @media screen and (max-width: 767px) {
+      flex-direction: column;
+    }
+  }
+
+  .post-cover {
+    width: 180px;
+    height: 120px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @media screen and (max-width: 767px) {
+      width: 100%;
+      height: 160px;
+    }
+  }
+
+  .post-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .post-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: var(--grey-5);
+  }
+
+  .post-reading {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .post-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin: 0 0 8px;
+    transition: 0.2s;
+  }
+
+  .post-item:hover .post-title {
+    color: var(--red-1);
+  }
+
+  .post-excerpt {
+    font-size: 0.9rem;
+    color: var(--grey-6);
+    line-height: 1.6;
+    margin: 0 0 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    background: var(--color-wrap);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--grey-5);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px;
+    color: var(--grey-6);
+
+    p {
+      margin-top: 16px;
+    }
+  }
+</style>
