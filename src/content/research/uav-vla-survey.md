@@ -1,6 +1,6 @@
 ---
 title: 无人机 VLA 研究方向综述
-type: note
+type: misc
 date: 2026-04-19
 description: 整理 VLA 在无人机与具身智能领域的研究现状，覆盖架构、训练策略、动作表示与评测基准。
 tags: [vla, uav, embodied-ai, survey, research]
